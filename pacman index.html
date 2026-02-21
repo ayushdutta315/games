@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Pac-Man Game</title>
+  <style>
+    canvas{ background:black; display:block; margin:auto; }
+  </style>
+</head>
+<body>
+<canvas id="game" width="600" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// Game settings
+const grid = 30;
+const rows = canvas.height / grid;
+const cols = canvas.width / grid;
+
+// Pac-Man
+let pacman = { x: 1, y: 1, dx: 0, dy: 0 };
+
+// Monsters
+let monsters = [
+  { x: cols-2, y: rows-2, color: "red" },
+  { x: cols-2, y: 1, color: "green" },
+  { x: 1, y: rows-2, color: "yellow" }
+];
+
+// Dots
+let dots = [];
+for(let i=1; i<cols-1; i++){
+  for(let j=1; j<rows-1; j++){
+    dots.push({x:i, y:j});
+  }
+}
+
+// Walls (empty area)
+let walls = [];
+
+// Handle arrow keys
+window.addEventListener("keydown", (e)=>{
+  if(e.key === "ArrowUp")    { pacman.dx=0; pacman.dy=-1; }
+  if(e.key === "ArrowDown")  { pacman.dx=0; pacman.dy=1; }
+  if(e.key === "ArrowLeft")  { pacman.dx=-1; pacman.dy=0; }
+  if(e.key === "ArrowRight") { pacman.dx=1; pacman.dy=0; }
+});
+
+// Game loop
+function gameLoop(){
+  // Move Pac-Man
+  pacman.x += pacman.dx;
+  pacman.y += pacman.dy;
+
+  // Keep inside bounds
+  pacman.x = Math.max(0, Math.min(cols-1, pacman.x));
+  pacman.y = Math.max(0, Math.min(rows-1, pacman.y));
+
+  // Eat dots
+  dots = dots.filter(dot=>{
+    return !(dot.x==pacman.x && dot.y==pacman.y);
+  });
+
+  // Draw
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Draw dots
+  ctx.fillStyle="white";
+  dots.forEach(dot=>{
+    ctx.beginPath();
+    ctx.arc(dot.x*grid+grid/2, dot.y*grid+grid/2, grid/8, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Draw Pac-Man
+  ctx.fillStyle="orange";
+  ctx.beginPath();
+  ctx.arc(pacman.x*grid+grid/2, pacman.y*grid+grid/2, grid/2, 0.25*Math.PI, 1.75*Math.PI);
+  ctx.lineTo(pacman.x*grid+grid/2, pacman.y*grid+grid/2);
+  ctx.fill();
+  // Eye
+  ctx.fillStyle="black";
+  ctx.beginPath();
+  ctx.arc(pacman.x*grid+grid/2+grid/8, pacman.y*grid+grid/2-grid/4, grid/8,0,2*Math.PI);
+  ctx.fill();
+
+  // Draw Monsters
+  monsters.forEach(monster=>{
+    ctx.fillStyle = monster.color;
+    ctx.beginPath();
+    ctx.arc(monster.x*grid+grid/2, monster.y*grid+grid/2, grid/2, Math.PI, 0);
+    ctx.lineTo(monster.x*grid+grid, monster.y*grid+grid);
+    ctx.lineTo(monster.x*grid, monster.y*grid+grid);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle="white";
+    ctx.beginPath();
+    ctx.arc(monster.x*grid+grid/3, monster.y*grid+grid/2-grid/8, grid/8,0,2*Math.PI);
+    ctx.arc(monster.x*grid+2*grid/3, monster.y*grid+grid/2-grid/8, grid/8,0,2*Math.PI);
+    ctx.fill();
+    ctx.fillStyle="black";
+    ctx.beginPath();
+    ctx.arc(monster.x*grid+grid/3, monster.y*grid+grid/2-grid/8, grid/16,0,2*Math.PI);
+    ctx.arc(monster.x*grid+2*grid/3, monster.y*grid+grid/2-grid/8, grid/16,0,2*Math.PI);
+    ctx.fill();
+  });
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+</body>
+</html>
