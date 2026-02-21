@@ -1,118 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title> Eat Ayush Pac-Man</title>
-  <style>
-    canvas{ background:black; display:block; margin:auto; }
-  </style>
+<meta charset="UTF-8">
+<title>Eat Ayush</title>
+<style>
+body { margin:0; background:black; text-align:center; color:white; font-family:Arial; }
+canvas { background:black; display:block; margin:auto; }
+button { margin:5px; padding:10px; font-size:18px; }
+.controls { margin-top:10px; }
+</style>
 </head>
 <body>
+
+<h2>
+Score: <span id="score">0</span> |
+High Score: <span id="highscore">0</span>
+</h2>
+
 <canvas id="game" width="600" height="600"></canvas>
+
+<div class="controls">
+<button onclick="setDirection(0,-1)">⬆</button><br>
+<button onclick="setDirection(-1,0)">⬅</button>
+<button onclick="setDirection(1,0)">➡</button><br>
+<button onclick="setDirection(0,1)">⬇</button>
+</div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-// Game settings
-const grid = 30;
-const rows = canvas.height / grid;
-const cols = canvas.width / grid;
+const tileSize = 30;
+const rows = 20;
+const cols = 20;
 
-// Pac-Man
-let pacman = { x: 1, y: 1, dx: 0, dy: 0 };
+let score = 0;
+let highscore = localStorage.getItem("pacmanHighScore") || 0;
+document.getElementById("highscore").innerText = highscore;
 
-// Monsters
-let monsters = [
-  { x: cols-2, y: rows-2, color: "red" },
-  { x: cols-2, y: 1, color: "green" },
-  { x: 1, y: rows-2, color: "yellow" }
-];
+let gameOver = false;
+let poweredUp = false;
+let powerTimer = 0;
 
-// Dots
-let dots = [];
-for(let i=1; i<cols-1; i++){
-  for(let j=1; j<rows-1; j++){
-    dots.push({x:i, y:j});
+// Maze
+let map = [];
+for (let r=0;r<rows;r++){
+  map[r]=[];
+  for (let c=0;c<cols;c++){
+    if(r===0||r===rows-1||c===0||c===cols-1||(r%4===0&&c%3!==0))
+      map[r][c]=1;
+    else
+      map[r][c]=2;
   }
 }
 
-// Walls (empty area)
-let walls = [];
+// Power pellets
+map[1][1]=3;
+map[1][18]=3;
+map[18][1]=3;
+map[18][18]=3;
 
-// Handle arrow keys
-window.addEventListener("keydown", (e)=>{
-  if(e.key === "ArrowUp")    { pacman.dx=0; pacman.dy=-1; }
-  if(e.key === "ArrowDown")  { pacman.dx=0; pacman.dy=1; }
-  if(e.key === "ArrowLeft")  { pacman.dx=-1; pacman.dy=0; }
-  if(e.key === "ArrowRight") { pacman.dx=1; pacman.dy=0; }
-});
+let pacman={x:1,y:1,dx:0,dy:0};
 
-// Game loop
-function gameLoop(){
-  // Move Pac-Man
-  pacman.x += pacman.dx;
-  pacman.y += pacman.dy;
+let ghosts=[
+ {x:18,y:18,color:"red"},
+ {x:18,y:1,color:"cyan"}
+];
 
-  // Keep inside bounds
-  pacman.x = Math.max(0, Math.min(cols-1, pacman.x));
-  pacman.y = Math.max(0, Math.min(rows-1, pacman.y));
-
-  // Eat dots
-  dots = dots.filter(dot=>{
-    return !(dot.x==pacman.x && dot.y==pacman.y);
-  });
-
-  // Draw
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // Draw dots
-  ctx.fillStyle="white";
-  dots.forEach(dot=>{
-    ctx.beginPath();
-    ctx.arc(dot.x*grid+grid/2, dot.y*grid+grid/2, grid/8, 0, Math.PI*2);
-    ctx.fill();
-  });
-
-  // Draw Pac-Man
-  ctx.fillStyle="orange";
-  ctx.beginPath();
-  ctx.arc(pacman.x*grid+grid/2, pacman.y*grid+grid/2, grid/2, 0.25*Math.PI, 1.75*Math.PI);
-  ctx.lineTo(pacman.x*grid+grid/2, pacman.y*grid+grid/2);
-  ctx.fill();
-  // Eye
-  ctx.fillStyle="black";
-  ctx.beginPath();
-  ctx.arc(pacman.x*grid+grid/2+grid/8, pacman.y*grid+grid/2-grid/4, grid/8,0,2*Math.PI);
-  ctx.fill();
-
-  // Draw Monsters
-  monsters.forEach(monster=>{
-    ctx.fillStyle = monster.color;
-    ctx.beginPath();
-    ctx.arc(monster.x*grid+grid/2, monster.y*grid+grid/2, grid/2, Math.PI, 0);
-    ctx.lineTo(monster.x*grid+grid, monster.y*grid+grid);
-    ctx.lineTo(monster.x*grid, monster.y*grid+grid);
-    ctx.fill();
-    // Eyes
-    ctx.fillStyle="white";
-    ctx.beginPath();
-    ctx.arc(monster.x*grid+grid/3, monster.y*grid+grid/2-grid/8, grid/8,0,2*Math.PI);
-    ctx.arc(monster.x*grid+2*grid/3, monster.y*grid+grid/2-grid/8, grid/8,0,2*Math.PI);
-    ctx.fill();
-    ctx.fillStyle="black";
-    ctx.beginPath();
-    ctx.arc(monster.x*grid+grid/3, monster.y*grid+grid/2-grid/8, grid/16,0,2*Math.PI);
-    ctx.arc(monster.x*grid+2*grid/3, monster.y*grid+grid/2-grid/8, grid/16,0,2*Math.PI);
-    ctx.fill();
-  });
-
-  requestAnimationFrame(gameLoop);
+function setDirection(dx,dy){
+  pacman.dx=dx;
+  pacman.dy=dy;
 }
 
-gameLoop();
-</script>
-</body>
+document.addEventListener("keydown",e=>{
+ if(e.key==="ArrowUp") setDirection(0,-1);
+ if(e.key==="ArrowDown") setDirection(0,1);
+ if(e.key==="ArrowLeft") setDirection(-1,0);
+ if(e.key==="ArrowRight") setDirection(1,0);
+});
 
-</html>
-
+// SOUND
+const eatSound=new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
+const powerSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+cons
